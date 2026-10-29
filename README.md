@@ -14,4 +14,4 @@ that setting.
 
 Patches:
 
-- `0001-browser-malformed-request-url.patch`: nightly-labs/openbot#3776 (issue #3775).
+- None. The malformed request URL fix (issue #3775) is upstream since nightly-labs/openbot#3825.

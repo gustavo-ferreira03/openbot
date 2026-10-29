@@ -86,6 +86,7 @@ jobs:
       - name: Apply patches
         run: |
           set -euo pipefail
+          shopt -s nullglob
           for patch in .fork/patches/*.patch; do
             if git apply --check "$patch" 2>/dev/null; then
               git apply "$patch"

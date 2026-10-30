@@ -94,6 +94,11 @@ export const INPUT_LIMITS = {
   attachments: 10,
   draftAttachments: 50,
   messageRecipients: 32,
+  /**
+   * The queued messages that one reorder names: the whole queue. The Team API allows 100. The limit
+   * on message recipients refused every move once more than 32 messages waited.
+   */
+  queueReorder: 100,
   attachmentName: 255,
   mimeType: 255,
   path: 4_096,

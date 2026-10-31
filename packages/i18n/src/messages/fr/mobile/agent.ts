@@ -375,6 +375,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "Chaque profil garde ses propres connexions et cookies. Un changement ferme les onglets ouverts de l’agent.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot n’a pas pu modifier le profil de navigateur de l’agent.",
+  "mobile.agent.planCard.label": "Montrer le plan avant les longues tâches",
+  "mobile.agent.planCard.footer":
+    "Avant une longue tâche, l’agent montre son plan. Il commence après 10 s ou quand vous appuyez sur Démarrer.",
   "mobile.agent.workspace.title": "Dossier de l’espace de travail",
   "mobile.agent.workspace.footer": "Le dossier de cet agent sur l’ordinateur hôte.",
   "mobile.agent.notifications.failed": "Impossible de modifier les notifications",

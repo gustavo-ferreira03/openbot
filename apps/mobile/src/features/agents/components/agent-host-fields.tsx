@@ -3,6 +3,7 @@ import {
   AGENT_TASK_LIMIT_MAX,
   type AgentHostSettings,
   type AgentNewChatSettings,
+  type AgentPlanCardSettings,
   type AgentTaskLimitSettings,
   agentProviderDescriptor,
   agentProviderName,
@@ -61,7 +62,7 @@ export interface AgentHostFieldsProps {
  */
 export function useAgentHostRecord<Settings extends object, Input extends Partial<Settings>>(
   { agent, server, available }: AgentHostFieldsProps,
-  part: "host" | "task-limit" | "new-chat" | "backup-models",
+  part: "host" | "task-limit" | "new-chat" | "plan-card" | "backup-models",
   load: (agentId: string, serverId: string) => Promise<Settings | null>,
   update: (input: Input & { agentId: string }, serverId: string) => Promise<Settings>,
 ) {
@@ -305,6 +306,36 @@ export function AgentNewChatAllowedField(props: AgentHostFieldsProps) {
             label={t("mobile.agent.agentNewChat.title")}
             dark={theme === "dark"}
             onValueChange={(allowNewChat) => void save(current, { allowNewChat })}
+          />
+        </SettingsRow>
+      </SettingsSection>
+      <SaveError error={error} />
+    </>
+  );
+}
+
+/** Agent info > Advanced: whether the agent shows its plan before a long task, from `agent-plan-card-v1`. */
+export function AgentPlanCardField(props: AgentHostFieldsProps) {
+  const { t } = useText();
+  const { theme } = useUniwind();
+  const workspace = useMobileWorkspaceActions();
+  const { current, enabled, error, save } = useAgentHostRecord<AgentPlanCardSettings, AgentPlanCardSettings>(
+    props,
+    "plan-card",
+    workspace.loadAgentPlanCard,
+    workspace.updateAgentPlanCard,
+  );
+  if (!current) return null;
+  return (
+    <>
+      <SettingsSection footer={t("mobile.agent.planCard.footer")}>
+        <SettingsRow>
+          <SettingsSwitch
+            value={current.quickAcknowledgement}
+            disabled={!enabled}
+            label={t("mobile.agent.planCard.label")}
+            dark={theme === "dark"}
+            onValueChange={(quickAcknowledgement) => void save(current, { quickAcknowledgement })}
           />
         </SettingsRow>
       </SettingsSection>

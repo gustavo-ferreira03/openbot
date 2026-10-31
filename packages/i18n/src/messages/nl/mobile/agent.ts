@@ -366,6 +366,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "Elk profiel heeft eigen aanmeldingen en cookies. Een wijziging sluit de open tabbladen van de agent.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot kon het browserprofiel van de agent niet wijzigen.",
+  "mobile.agent.planCard.label": "Plan tonen vóór lange taken",
+  "mobile.agent.planCard.footer":
+    "Vóór een lange taak toont de agent zijn plan. Hij begint na 10 s, of als je op Starten drukt.",
   "mobile.agent.workspace.title": "Werkruimtemap",
   "mobile.agent.workspace.footer": "De map van deze agent op de hostcomputer.",
   "mobile.agent.notifications.failed": "Kan meldingen niet wijzigen",

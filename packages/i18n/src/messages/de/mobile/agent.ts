@@ -373,6 +373,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "Jedes Profil hat eigene Anmeldungen und Cookies. Eine Änderung schließt die offenen Tabs des Agenten.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot konnte das Browser-Profil des Agenten nicht ändern.",
+  "mobile.agent.planCard.label": "Plan vor langen Aufgaben zeigen",
+  "mobile.agent.planCard.footer":
+    "Vor einer langen Aufgabe zeigt der Agent seinen Plan. Er beginnt nach 10 s oder wenn du auf Start drückst.",
   "mobile.agent.workspace.title": "Arbeitsbereichsordner",
   "mobile.agent.workspace.footer": "Der Ordner dieses Agenten auf dem Host-Computer.",
   "mobile.agent.notifications.failed": "Benachrichtigungen konnten nicht geändert werden",

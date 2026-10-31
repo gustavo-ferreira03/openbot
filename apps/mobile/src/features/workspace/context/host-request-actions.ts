@@ -7,6 +7,7 @@ import {
   decodeAgentBackupModelSettings,
   decodeAgentHostSettings,
   decodeAgentNewChatSettings,
+  decodeAgentPlanCardSettings,
   decodeAgentTaskLimitSettings,
   decodeChannelRoutineRuns,
   decodeChannelRoutines,
@@ -44,6 +45,10 @@ import { AGENT_MEMORIES_CAPABILITY } from "@openbot/contracts/team-protocol/agen
 import { AGENT_MEMORY_LIMIT_CAPABILITY } from "@openbot/contracts/team-protocol/agent-memory-limit-v1";
 import { AGENT_NEW_CHAT_CAPABILITY, AGENT_NEW_CHAT_ROUTES } from "@openbot/contracts/team-protocol/agent-new-chat-v1";
 import { AGENT_NOTIFICATION_LEVELS_CAPABILITY } from "@openbot/contracts/team-protocol/agent-notification-levels-v1";
+import {
+  AGENT_PLAN_CARD_CAPABILITY,
+  AGENT_PLAN_CARD_ROUTES,
+} from "@openbot/contracts/team-protocol/agent-plan-card-v1";
 import { AGENT_PUBLISH_CAPABILITY } from "@openbot/contracts/team-protocol/agent-publish-v1";
 import { AGENT_SESSION_SETTINGS_CAPABILITY } from "@openbot/contracts/team-protocol/agent-session-settings-v1";
 import {
@@ -289,6 +294,8 @@ type HostRequestActions = Pick<
   | "updateAgentTaskLimit"
   | "loadAgentNewChat"
   | "updateAgentNewChat"
+  | "loadAgentPlanCard"
+  | "updateAgentPlanCard"
   | "loadProviderAccounts"
   | "loadPlanLimits"
   | "setAgentProviderAccount"
@@ -893,6 +900,14 @@ export function createHostRequestActions({
     updateAgentNewChat: async (input, serverId) => {
       requireCapability(capabilities, serverId, AGENT_NEW_CHAT_CAPABILITY, "mobile.agent.host.unsupported");
       return request("POST", AGENT_NEW_CHAT_ROUTES.update, decodeAgentNewChatSettings, { ...input }, serverId);
+    },
+    loadAgentPlanCard: async (agentId, serverId) =>
+      has(serverId, AGENT_PLAN_CARD_CAPABILITY)
+        ? request("POST", AGENT_PLAN_CARD_ROUTES.settings, decodeAgentPlanCardSettings, { agentId }, serverId)
+        : null,
+    updateAgentPlanCard: async (input, serverId) => {
+      requireCapability(capabilities, serverId, AGENT_PLAN_CARD_CAPABILITY, "mobile.agent.host.unsupported");
+      return request("POST", AGENT_PLAN_CARD_ROUTES.update, decodeAgentPlanCardSettings, { ...input }, serverId);
     },
     loadProviderAccounts: async (serverId) =>
       has(serverId, PROVIDER_ACCOUNTS_CAPABILITY) ? runTeamRequest(listProviderAccounts(teamApi(serverId))) : null,

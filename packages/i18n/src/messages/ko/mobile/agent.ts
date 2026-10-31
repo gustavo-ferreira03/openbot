@@ -360,6 +360,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "각 프로필은 자체 로그인과 쿠키를 보관합니다. 변경하면 에이전트의 열린 탭이 닫힙니다.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot이 에이전트의 브라우저 프로필을 변경하지 못했습니다.",
+  "mobile.agent.planCard.label": "긴 작업 전에 계획 표시",
+  "mobile.agent.planCard.footer":
+    "긴 작업 전에 에이전트가 계획을 보여줘요. 10초 후 또는 시작을 누르면 작업이 시작돼요.",
   "mobile.agent.workspace.title": "워크스페이스 폴더",
   "mobile.agent.workspace.footer": "호스트 컴퓨터에 있는 이 에이전트의 폴더예요.",
   "mobile.agent.notifications.failed": "알림을 변경할 수 없어요",

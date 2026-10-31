@@ -367,6 +367,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "各プロファイルは独自のサインインと Cookie を保持します。変更するとエージェントの開いているタブは閉じます。",
   "mobile.agent.browserProfile.saveFailed": "OpenBot はエージェントのブラウザープロファイルを変更できませんでした。",
+  "mobile.agent.planCard.label": "長いタスクの前に計画を表示",
+  "mobile.agent.planCard.footer":
+    "長いタスクの前に、エージェントが計画を表示します。10 秒後、または開始を押すと始まります。",
   "mobile.agent.workspace.title": "ワークスペースのフォルダー",
   "mobile.agent.workspace.footer": "ホストのコンピューター上にある、このエージェントのフォルダーです。",
   "mobile.agent.notifications.failed": "通知を変更できませんでした",

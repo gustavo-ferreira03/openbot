@@ -357,6 +357,9 @@ export const messages = defineMessages("mobile.agent", {
   "mobile.agent.browserProfile.footer":
     "Each profile keeps its own sign-ins and cookies. A change closes the agent's open tabs.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot could not change the browser profile of the agent.",
+  "mobile.agent.planCard.label": "Show the plan before long tasks",
+  "mobile.agent.planCard.footer":
+    "Before a long task, the agent shows its plan. It starts after 10 s, or when you press Start.",
   "mobile.agent.workspace.title": "Workspace folder",
   "mobile.agent.workspace.footer": "The folder of this agent on the host computer.",
   "mobile.agent.notifications.failed": "Could not change notifications",

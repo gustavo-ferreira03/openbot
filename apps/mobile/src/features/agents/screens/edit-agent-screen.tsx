@@ -32,6 +32,7 @@ import {
   AgentBusyMessageField,
   AgentHostPermissionFields,
   AgentNewChatAllowedField,
+  AgentPlanCardField,
   AgentTaskLimitField,
 } from "@/features/agents/components/agent-host-fields";
 import { AgentInformation } from "@/features/agents/components/agent-information";
@@ -124,6 +125,7 @@ function AgentForm({
     canManageAgentHostSettings,
     canManageAgentTaskLimit,
     canManageAgentNewChat,
+    canManageAgentPlanCard,
     canManageBrowserProfiles,
     canSetAgentNotificationLevel,
     setAgentProviderAccount,
@@ -141,6 +143,7 @@ function AgentForm({
     canManageAgentHostSettings(agent.serverId) ||
     canManageAgentTaskLimit(agent.serverId) ||
     canManageAgentNewChat(agent.serverId) ||
+    canManageAgentPlanCard(agent.serverId) ||
     canManageBrowserProfiles(agent.serverId);
   const [edits, setEdits] = useState<AgentEdits>({});
   const foreground = useThemeColor("foreground");
@@ -419,6 +422,8 @@ function AgentForm({
           ) : null}
           {canStartNewChat(agent.serverId) ? <AgentNewChatSection agent={agent} available={available} /> : null}
           <AgentNewChatAllowedField agent={agent} server={host} available={available} />
+          {/* After the new-chat switch, as in the desktop Advanced group. */}
+          <AgentPlanCardField agent={agent} server={host} available={available} />
         </>
       ) : null}
       {page === "tables" ? <AgentSharedTables agent={agent} available={available} /> : null}

@@ -357,6 +357,7 @@ export interface TeamApiAdmin {
    * `agent-backup-models-v1`: its backup models.
    * `agent-task-limit-v1`: how many of its tasks run at the same time.
    * `agent-new-chat-v1`: whether it starts a new chat itself when its chat gets long.
+   * `agent-plan-card-v1`: whether it shows its plan card before a long task.
    */
   agentHost?: AgentHostSettingsService;
   sessionSettings?: Pick<

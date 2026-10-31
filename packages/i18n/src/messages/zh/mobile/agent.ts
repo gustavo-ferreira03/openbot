@@ -346,6 +346,8 @@ export const messages = {
   "mobile.agent.browserProfile.manage": "管理配置文件",
   "mobile.agent.browserProfile.footer": "每个配置文件保存自己的登录和 Cookie。更改会关闭助手打开的标签页。",
   "mobile.agent.browserProfile.saveFailed": "OpenBot 无法更改助手的浏览器配置文件。",
+  "mobile.agent.planCard.label": "长任务开始前显示计划",
+  "mobile.agent.planCard.footer": "长任务开始前，助手会先显示计划。10 秒后或你点按“开始”时，任务开始。",
   "mobile.agent.workspace.title": "工作区文件夹",
   "mobile.agent.workspace.footer": "该助手在主机电脑上的文件夹。",
   "mobile.agent.notifications.failed": "无法更改通知设置",

@@ -376,6 +376,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "Her profil kendi oturumlarını ve çerezlerini tutar. Bir değişiklik ajanın açık sekmelerini kapatır.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot ajanın tarayıcı profilini değiştiremedi.",
+  "mobile.agent.planCard.label": "Uzun görevlerden önce planı göster",
+  "mobile.agent.planCard.footer":
+    "Uzun bir görevden önce ajan planını gösterir. 10 sn sonra veya Başlat'a bastığınızda başlar.",
   "mobile.agent.workspace.title": "Çalışma alanı klasörü",
   "mobile.agent.workspace.footer": "Bu ajanın ana makinedeki klasörü.",
   "mobile.agent.notifications.failed": "Bildirimler değiştirilemedi",

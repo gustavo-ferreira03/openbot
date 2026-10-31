@@ -393,6 +393,9 @@ export const messages = {
   "mobile.agent.browserProfile.footer":
     "Каждый профиль хранит свои входы и файлы cookie. Изменение закрывает открытые вкладки агента.",
   "mobile.agent.browserProfile.saveFailed": "OpenBot не удалось изменить профиль браузера агента.",
+  "mobile.agent.planCard.label": "Показывать план перед долгими задачами",
+  "mobile.agent.planCard.footer":
+    "Перед долгой задачей агент показывает свой план. Он начинает через 10 с или когда вы нажимаете «Начать».",
   "mobile.agent.workspace.title": "Папка рабочего пространства",
   "mobile.agent.workspace.footer": "Папка этого агента на компьютере-хосте.",
   "mobile.agent.notifications.failed": "Не удалось изменить уведомления",

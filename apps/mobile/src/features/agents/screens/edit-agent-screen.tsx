@@ -25,6 +25,7 @@ import { AgentNewChatSection, AgentNotificationLevelRow } from "@/features/agent
 import {
   AgentBusyMessageField,
   AgentHostPermissionFields,
+  AgentNewChatAllowedField,
   AgentTaskLimitField,
 } from "@/features/agents/components/agent-host-fields";
 import { AgentInformation } from "@/features/agents/components/agent-information";
@@ -114,6 +115,7 @@ function AgentForm({
     canManageAgentAccess,
     canManageAgentHostSettings,
     canManageAgentTaskLimit,
+    canManageAgentNewChat,
     canSetAgentNotificationLevel,
     setAgentProviderAccount,
   } = useMobileWorkspace();
@@ -128,7 +130,8 @@ function AgentForm({
     Boolean(agent.workspacePath) ||
     canStartNewChat(agent.serverId) ||
     canManageAgentHostSettings(agent.serverId) ||
-    canManageAgentTaskLimit(agent.serverId);
+    canManageAgentTaskLimit(agent.serverId) ||
+    canManageAgentNewChat(agent.serverId);
   const [edits, setEdits] = useState<AgentEdits>({});
   const foreground = useThemeColor("foreground");
   const [photo, setPhoto] = useState<AgentPhotoDraft | null | undefined>();
@@ -399,6 +402,7 @@ function AgentForm({
             </SettingsSection>
           ) : null}
           {canStartNewChat(agent.serverId) ? <AgentNewChatSection agent={agent} available={available} /> : null}
+          <AgentNewChatAllowedField agent={agent} server={host} available={available} />
         </>
       ) : null}
       {page === "tables" ? <AgentSharedTables agent={agent} available={available} /> : null}

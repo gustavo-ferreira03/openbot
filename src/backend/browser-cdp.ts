@@ -44,12 +44,15 @@ import {
   collectBoundedSnapshot,
   collectFocus,
   cssObjectMatch,
+  describeTargetCandidates,
   fallbackRole,
   MAX_SNAPSHOT_SCANNED_NODES,
+  MAX_TARGET_CANDIDATES,
   pageContainsText,
   type SemanticMatch,
   type SnapshotTarget,
   semanticAxMatches,
+  type TargetCandidateText,
   type TargetRecord,
   visibleTextObjectMatches,
 } from "./browser-cdp-snapshot";
@@ -2503,7 +2506,8 @@ export class BrowserCdpEngine {
             const target = condition.target;
             if (target) {
               yield* Effect.gen({ self: this }, function* () {
-                yield* this.#resolveTargetEffect(send, target, deadline, true);
+                // A poll drops the error, so an ambiguous target needs no candidate list here.
+                yield* this.#resolveTargetEffect(send, target, deadline, true, false);
               }).pipe(
                 Effect.catch(() =>
                   Effect.sync(() => {
@@ -2697,6 +2701,7 @@ export class BrowserCdpEngine {
     target: BrowserTarget,
     deadline?: number,
     allowNonActionableRole = false,
+    describeAmbiguity = true,
   ): Effect.fn.Return<
     { backendNodeId?: number; sessionId?: string | undefined; x: number; y: number },
     BrowserOperationError
@@ -2751,44 +2756,49 @@ export class BrowserCdpEngine {
       };
     }
     if (target.kind === "css") {
-      const matches: Array<{ objectId: string; sessionId?: string | undefined }> = [];
-      let ambiguous = false;
+      const matches: Array<{ objectId: string; sessionId?: string | undefined; targetId?: string | undefined }> = [];
+      const releaseMatches = () =>
+        Effect.all(
+          matches.map((match) =>
+            Effect.exit(send("Runtime.releaseObject", { objectId: match.objectId }, match.sessionId)),
+          ),
+          { concurrency: "unbounded" },
+        );
       yield* Effect.gen({ self: this }, function* () {
         for (const capture of this.#snapshotTargets(Number.POSITIVE_INFINITY)) {
-          const match = yield* cssObjectMatch(send, target.selector, capture.sessionId);
-          ambiguous ||= match.ambiguous;
-          if (match.objectId)
+          for (const objectId of yield* cssObjectMatch(send, target.selector, capture.sessionId)) {
             matches.push({
-              objectId: match.objectId,
+              objectId,
               ...(capture.sessionId === undefined ? {} : { sessionId: capture.sessionId }),
+              ...(capture.targetId === undefined ? {} : { targetId: capture.targetId }),
             });
+          }
+          if (matches.length >= MAX_TARGET_CANDIDATES) break;
         }
       }).pipe(
         Effect.catch((operationFailure) =>
-          Effect.gen({ self: this }, function* () {
-            const error = operationFailure.cause;
-            yield* Effect.all(
-              matches
-                .map((match) =>
-                  send("Runtime.releaseObject", { objectId: match.objectId }, match.sessionId).pipe(Effect.ignore),
-                )
-                .map((operation) => Effect.exit(operation)),
-              { concurrency: "unbounded" },
-            );
-            return yield* browserFailure(error);
+          Effect.gen(function* () {
+            yield* releaseMatches();
+            return yield* browserFailure(operationFailure.cause);
           }),
         ),
       );
-      if (ambiguous || matches.length > 1) {
-        yield* Effect.all(
-          matches
-            .map((match) =>
-              send("Runtime.releaseObject", { objectId: match.objectId }, match.sessionId).pipe(Effect.ignore),
-            )
-            .map((operation) => Effect.exit(operation)),
-          { concurrency: "unbounded" },
+      if (matches.length > 1) {
+        const summary = `CSS selector is ambiguous (at least ${Math.min(matches.length, MAX_TARGET_CANDIDATES)} matches): ${target.selector}`;
+        if (!describeAmbiguity) {
+          yield* releaseMatches();
+          return yield* browserFailure(new Error(summary));
+        }
+        // A match that cannot be described, such as one removed after the scan, is left out of the list.
+        const candidates = yield* Effect.forEach(matches.slice(0, MAX_TARGET_CANDIDATES), (match) =>
+          describedMatch(send, match.objectId, match, "").pipe(Effect.catch(() => Effect.succeed(undefined))),
+        ).pipe(Effect.ensuring(releaseMatches()));
+        return yield* this.#ambiguousTarget(
+          send,
+          summary,
+          candidates.filter((candidate) => candidate !== undefined),
+          deadline,
         );
-        return yield* browserFailure(new Error(`CSS selector is ambiguous (at least 2 matches): ${target.selector}`));
       }
       const match = matches[0];
       if (!match) return yield* browserFailure(new Error(`No element matches CSS selector: ${target.selector}`));
@@ -2821,28 +2831,20 @@ export class BrowserCdpEngine {
         if (seen.has(key)) continue;
         seen.add(key);
         candidates.push(candidate);
-        if (candidates.length >= 2) break;
+        if (candidates.length >= MAX_TARGET_CANDIDATES) break;
       }
-      if (candidates.length >= 2) break;
+      if (candidates.length >= MAX_TARGET_CANDIDATES) break;
       if (target.kind === "text") {
         const objectIds = yield* visibleTextObjectMatches(send, capture, target, deadline);
         yield* Effect.gen({ self: this }, function* () {
           for (const objectId of objectIds) {
-            const described = yield* send("DOM.describeNode", { objectId, depth: 0 }, capture.sessionId);
-            const node = recordValue(described.node);
-            const backendNodeId = numberValue(node?.backendNodeId);
-            if (!backendNodeId) continue;
-            const key = `${capture.targetId ?? "main"}:${backendNodeId}`;
+            const candidate = yield* describedMatch(send, objectId, capture, target.text);
+            if (!candidate) continue;
+            const key = `${capture.targetId ?? "main"}:${candidate.backendNodeId}`;
             if (seen.has(key)) continue;
             seen.add(key);
-            candidates.push({
-              backendNodeId,
-              ...(capture.sessionId === undefined ? {} : { sessionId: capture.sessionId }),
-              ...(capture.targetId === undefined ? {} : { targetId: capture.targetId }),
-              role: fallbackRole(node ?? {}),
-              name: target.text,
-            });
-            if (candidates.length >= 2) break;
+            candidates.push(candidate);
+            if (candidates.length >= MAX_TARGET_CANDIDATES) break;
           }
         }).pipe(
           Effect.ensuring(
@@ -2857,7 +2859,7 @@ export class BrowserCdpEngine {
           ),
         );
       }
-      if (candidates.length >= 2) break;
+      if (candidates.length >= MAX_TARGET_CANDIDATES) break;
     }
     if (navigationGeneration !== this.#navigationGeneration) {
       return yield* browserFailure(
@@ -2867,14 +2869,9 @@ export class BrowserCdpEngine {
     const [found] = candidates;
     if (!found) return yield* browserFailure(new Error(`No element matches ${describeBrowserTarget(target)}.`));
     if (candidates.length > 1) {
-      const sample = candidates
-        .slice(0, 5)
-        .map(
-          (candidate) =>
-            `${candidate.targetId ?? "main"}:${candidate.backendNodeId} ${candidate.role} “${candidate.name.slice(0, 80)}”`,
-        )
-        .join("; ");
-      return yield* browserFailure(new Error(`Target is ambiguous (at least 2 matches). Candidates: ${sample}`));
+      const summary = `Target is ambiguous (at least ${candidates.length} matches): ${describeBrowserTarget(target)}`;
+      if (!describeAmbiguity) return yield* browserFailure(new Error(summary));
+      return yield* this.#ambiguousTarget(send, summary, candidates, deadline);
     }
     return {
       backendNodeId: found.backendNodeId,
@@ -2882,6 +2879,62 @@ export class BrowserCdpEngine {
       x: 0,
       y: 0,
     };
+  });
+
+  /**
+   * Refuses an ambiguous target before any input. The error names each candidate with its text, the
+   * text of its item when labels repeat, and its ref when the last snapshot has one, so that the
+   * agent can choose the intended item without guessing. Candidate text goes through the card scrub
+   * like a snapshot. After the deadline, the error names the candidates without their text.
+   */
+  readonly #ambiguousTarget = Effect.fn("BrowserCdp.ambiguousTarget")(function* (
+    this: BrowserCdpEngine,
+    send: SendCommand,
+    summary: string,
+    candidates: readonly SemanticMatch[],
+    deadline?: number,
+  ): Effect.fn.Return<never, BrowserOperationError> {
+    const key = (candidate: SemanticMatch) => `${candidate.targetId ?? "main"}:${candidate.backendNodeId}`;
+    const texts = new Map<string, TargetCandidateText>();
+    for (const sessionId of new Set(candidates.map((candidate) => candidate.sessionId))) {
+      if (deadline !== undefined && Date.now() >= deadline) break;
+      const own = candidates.filter((candidate) => candidate.sessionId === sessionId);
+      const described = yield* describeTargetCandidates(
+        send,
+        sessionId,
+        own.map((candidate) => candidate.backendNodeId),
+      ).pipe(Effect.catch(() => Effect.succeed([])));
+      own.forEach((candidate, index) => {
+        const text = described[index];
+        if (text) texts.set(key(candidate), text);
+      });
+    }
+    const labels = candidates.map((candidate) => candidate.name.slice(0, 120) || texts.get(key(candidate))?.text || "");
+    const revision = this.#lastSnapshot?.revision;
+    let missingRef = false;
+    const lines = candidates.map((candidate, index) => {
+      const text = texts.get(key(candidate));
+      const label = labels[index] ?? "";
+      const ref = revision === undefined ? undefined : `${revision}:${key(candidate)}`;
+      const tokens = [`${index + 1}.`];
+      if (ref !== undefined && this.#targets.has(ref)) tokens.push(`ref=${ref}`);
+      else missingRef = true;
+      if (candidate.role) tokens.push(candidate.role);
+      else if (text?.tag) tokens.push(`<${text.tag}>`);
+      tokens.push(JSON.stringify(label));
+      // The item text tells apart candidates with the same label; a distinct label needs none.
+      const shared = !label || labels.filter((other) => other === label).length > 1;
+      if (shared && text?.item && text.item !== label) tokens.push(`in ${JSON.stringify(text.item)}`);
+      return tokens.join(" ");
+    });
+    const message = [
+      `${summary}. No input was sent. Candidates:`,
+      ...lines,
+      "Act on the ref of the intended item, or use a target that matches only that item." +
+        (missingRef ? " Take a fresh snapshot to get a ref for a candidate that has none." : "") +
+        " If the task does not say which item, ask the user.",
+    ].join("\n");
+    return yield* browserFailure(new Error(this.#cardScrub.text(message)));
   });
 
   readonly #targetFingerprint = Effect.fn("BrowserCdp.targetFingerprint")(function* (
@@ -3334,6 +3387,26 @@ function uniquePoints(points: Array<{ x: number; y: number }>): Array<{ x: numbe
     return true;
   });
 }
+
+/** The match of a page element object, or undefined when the node has no backend id. */
+const describedMatch = Effect.fn("Browser.describedMatch")(function* (
+  send: SendCommand,
+  objectId: string,
+  location: { sessionId?: string | undefined; targetId?: string | undefined },
+  name: string,
+) {
+  const described = yield* send("DOM.describeNode", { objectId, depth: 0 }, location.sessionId);
+  const node = recordValue(described.node);
+  const backendNodeId = numberValue(node?.backendNodeId);
+  if (!backendNodeId) return undefined;
+  return {
+    backendNodeId,
+    ...(location.sessionId === undefined ? {} : { sessionId: location.sessionId }),
+    ...(location.targetId === undefined ? {} : { targetId: location.targetId }),
+    role: fallbackRole(node ?? {}),
+    name,
+  } satisfies SemanticMatch;
+});
 
 const hitActivatesTarget = Effect.fn("Browser.hitActivatesTarget")(function* (
   send: SendCommand,

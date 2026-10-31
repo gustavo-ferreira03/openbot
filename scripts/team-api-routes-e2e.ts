@@ -3909,7 +3909,6 @@ try {
       token: bobToken,
       json: { deliveryIds: "delivery-1" },
     });
-    // The whole queue goes in one reorder, so a queue of more than 32 messages has to pass.
     const longQueue = Array.from({ length: 33 }, (_, index) => `delivery-${index + 1}`).toReversed();
     const reorderLong = await call("POST", TEAM_API_ROUTES.agent.queueReorder("agent-ada"), {
       token: bobToken,

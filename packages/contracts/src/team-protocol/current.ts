@@ -21,6 +21,7 @@ import { AGENT_SESSION_SETTINGS_CAPABILITY } from "./agent-session-settings-v1";
 import { AGENT_TASK_LIMIT_CAPABILITY } from "./agent-task-limit-v1";
 import { AGENT_TASK_UI_BLOCKS_CAPABILITY } from "./agent-task-ui-blocks-v1";
 import { AGENT_TASKS_CAPABILITY } from "./agent-tasks-v1";
+import { AGENT_THREAD_BRANCHES_CAPABILITY } from "./agent-thread-branches-v1";
 import { AGENT_THREAD_FILES_CAPABILITY } from "./agent-thread-files-v1";
 import { AGENT_THREAD_READS_CAPABILITY } from "./agent-thread-reads-v1";
 import { AGENT_THREADS_CAPABILITY } from "./agent-threads-v1";
@@ -160,6 +161,7 @@ export {
   AGENT_TASK_LIMIT_CAPABILITY,
   AGENT_TASK_UI_BLOCKS_CAPABILITY,
   AGENT_TASKS_CAPABILITY,
+  AGENT_THREAD_BRANCHES_CAPABILITY,
   AGENT_THREAD_FILES_CAPABILITY,
   AGENT_THREAD_READS_CAPABILITY,
   AGENT_THREADS_CAPABILITY,
@@ -366,6 +368,7 @@ export const TEAM_CURRENT_CAPABILITIES = [
   TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY,
   AGENT_FOLDERS_CAPABILITY,
   HOST_KEY_ROTATION_CAPABILITY,
+  AGENT_THREAD_BRANCHES_CAPABILITY,
 ] as const;
 
 export type TeamCurrentCapability = (typeof TEAM_CURRENT_CAPABILITIES)[number];
@@ -505,7 +508,8 @@ export const TEAM_BOOTSTRAP_CAPABILITIES = TEAM_CURRENT_CAPABILITIES.filter(
     capability !== AGENT_PLAN_CARD_CAPABILITY &&
     capability !== TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY &&
     capability !== AGENT_FOLDERS_CAPABILITY &&
-    capability !== HOST_KEY_ROTATION_CAPABILITY,
+    capability !== HOST_KEY_ROTATION_CAPABILITY &&
+    capability !== AGENT_THREAD_BRANCHES_CAPABILITY,
 );
 /**
  * The capabilities that only a protocol 9 peer sends and gets. Protocols 7 and 8 read at most 128
@@ -521,6 +525,7 @@ export const TEAM_PROTOCOL_V9_ONLY_CAPABILITIES: ReadonlySet<string> = new Set<T
   TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY,
   AGENT_FOLDERS_CAPABILITY,
   HOST_KEY_ROTATION_CAPABILITY,
+  AGENT_THREAD_BRANCHES_CAPABILITY,
 ]);
 // A v8 host reads at most 128 capabilities, so a client sends the protocol 9 ones only after it
 // negotiates protocol 9.
@@ -619,6 +624,7 @@ export function legacyTeamCapabilities(capabilities: readonly string[]): string[
       capability !== TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY &&
       capability !== AGENT_FOLDERS_CAPABILITY &&
       capability !== HOST_KEY_ROTATION_CAPABILITY &&
-      capability !== TEAM_LONG_CAPABILITY_LISTS_CAPABILITY,
+      capability !== TEAM_LONG_CAPABILITY_LISTS_CAPABILITY &&
+      capability !== AGENT_THREAD_BRANCHES_CAPABILITY,
   );
 }

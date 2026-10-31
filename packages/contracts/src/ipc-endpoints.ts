@@ -114,6 +114,7 @@ import type {
   AgentTaskInput,
   AgentTaskReadState,
   AgentTasksSnapshot,
+  BranchAgentTaskInput,
   MarkAgentTaskReadInput,
   RenameAgentTaskInput,
   RunQueuedMessageAsTaskInput,
@@ -1415,6 +1416,8 @@ export const IPC_ENDPOINTS = {
     readTask: scopedRequest<AgentTaskInput, ConversationSnapshot>()("agent:tasks:read"),
     startTask: scopedRequest<StartAgentTaskInput, AgentTask>()("agent:tasks:start"),
     runQueuedMessageAsTask: scopedRequest<RunQueuedMessageAsTaskInput, AgentTask>()("agent:tasks:run-queued-message"),
+    // A joined server takes this through `agent-thread-branches-v1`.
+    branchTask: scopedRequest<BranchAgentTaskInput, AgentTask>()("agent:tasks:branch"),
     stopTask: scopedRequest<AgentTaskInput, void>()("agent:tasks:stop"),
     closeTask: scopedRequest<AgentTaskInput, void>()("agent:tasks:close"),
     reopenTask: scopedRequest<AgentTaskInput, void>()("agent:tasks:reopen"),

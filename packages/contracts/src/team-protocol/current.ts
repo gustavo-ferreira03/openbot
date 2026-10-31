@@ -53,6 +53,7 @@ import { EVENTS_CAPABILITY } from "./events-v1";
 import { FOCUS_USE_CAPABILITY } from "./focus-use-v1";
 import { TEAM_HISTORY_EXTENT_CAPABILITY } from "./history-extent-v1";
 import { HOST_ADMIN_CAPABILITY } from "./host-admin-v1";
+import { HOST_KEY_ROTATION_CAPABILITY } from "./host-key-rotation-v1";
 import { HOST_MEMBER_UPDATE_CAPABILITY } from "./host-member-update-v1";
 import { HOST_RELEASE_CAPABILITY } from "./host-release-v1";
 import { HOST_TIMEZONE_CAPABILITY } from "./host-timezone-v1";
@@ -180,6 +181,7 @@ export {
   EVENTS_CAPABILITY,
   FOCUS_USE_CAPABILITY,
   HOST_ADMIN_CAPABILITY,
+  HOST_KEY_ROTATION_CAPABILITY,
   HOST_MEMBER_UPDATE_CAPABILITY,
   HOST_RELEASE_CAPABILITY,
   HOST_TIMEZONE_CAPABILITY,
@@ -363,6 +365,7 @@ export const TEAM_CURRENT_CAPABILITIES = [
   AGENT_PLAN_CARD_CAPABILITY,
   TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY,
   AGENT_FOLDERS_CAPABILITY,
+  HOST_KEY_ROTATION_CAPABILITY,
 ] as const;
 
 export type TeamCurrentCapability = (typeof TEAM_CURRENT_CAPABILITIES)[number];
@@ -501,7 +504,8 @@ export const TEAM_BOOTSTRAP_CAPABILITIES = TEAM_CURRENT_CAPABILITIES.filter(
     capability !== BROWSER_PROFILES_EVENTS_CAPABILITY &&
     capability !== AGENT_PLAN_CARD_CAPABILITY &&
     capability !== TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY &&
-    capability !== AGENT_FOLDERS_CAPABILITY,
+    capability !== AGENT_FOLDERS_CAPABILITY &&
+    capability !== HOST_KEY_ROTATION_CAPABILITY,
 );
 /**
  * The capabilities that only a protocol 9 peer sends and gets. Protocols 7 and 8 read at most 128
@@ -516,6 +520,7 @@ export const TEAM_PROTOCOL_V9_ONLY_CAPABILITIES: ReadonlySet<string> = new Set<T
   AGENT_PLAN_CARD_CAPABILITY,
   TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY,
   AGENT_FOLDERS_CAPABILITY,
+  HOST_KEY_ROTATION_CAPABILITY,
 ]);
 // A v8 host reads at most 128 capabilities, so a client sends the protocol 9 ones only after it
 // negotiates protocol 9.
@@ -613,6 +618,7 @@ export function legacyTeamCapabilities(capabilities: readonly string[]): string[
       capability !== AGENT_PLAN_CARD_CAPABILITY &&
       capability !== TEAM_UI_BLOCK_AUTO_ANSWER_CAPABILITY &&
       capability !== AGENT_FOLDERS_CAPABILITY &&
+      capability !== HOST_KEY_ROTATION_CAPABILITY &&
       capability !== TEAM_LONG_CAPABILITY_LISTS_CAPABILITY,
   );
 }

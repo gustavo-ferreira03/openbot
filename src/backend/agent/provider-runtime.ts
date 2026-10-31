@@ -656,6 +656,7 @@ export class ProviderRuntime implements ProviderPort {
           ...(lastError ? { lastError: lastError.message, lastErrorAt: lastError.at } : {}),
           ...(row.id === "antigravity" && this.#credentials.apiKey("antigravity") ? { apiKeyInUse: true } : {}),
           ...(row.id === "codex" && this.#accounts.get("codex")?.type === "apiKey" ? { apiKeyInUse: true } : {}),
+          ...(row.id === "muse" && this.#credentials.apiKey("muse") ? { apiKeyInUse: true } : {}),
         };
         const accounts =
           row.state === "available" && row.id !== "acp"
@@ -1656,7 +1657,13 @@ export class ProviderRuntime implements ProviderPort {
     this: ProviderRuntime,
     provider: AgentProvider,
   ) {
-    const accounts = yield* this.#requireAccounts(provider);
+    // A provider with one account, such as Muse, can sign out too. A CLI with no sign-out is refused
+    // before a sign-in is cancelled.
+    const accounts = this.#providerAccounts;
+    if (!accounts || !ProviderAccounts.signOutCommand(provider))
+      return yield* new ProviderOperationFailed({
+        cause: new Error(sourceText("error.provider.signOutUnsupported", { provider: providerLabel(provider) })),
+      });
     // Codex signs in, by browser or by code, through its own login client.
     const codex = requireProviderDriver(provider).signIn.kind === "browser";
     return yield* this.#runProviderConnectionCommand(provider, () =>

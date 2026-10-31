@@ -7,6 +7,7 @@ import type {
   AgentAdminSettings,
   AgentAnalytics,
   AgentAnalyticsInput,
+  AgentBackupModelSettings,
   AgentBrowserProfile,
   AgentHostSettings,
   AgentMemory,
@@ -97,6 +98,7 @@ import type {
   StorageUsage,
   UninstallSkillInput,
   UpdateAgentAdminSettingsInput,
+  UpdateAgentBackupModelsInput,
   UpdateAgentBrowserProfileInput,
   UpdateAgentHostSettingsInput,
   UpdateAgentInput,
@@ -585,6 +587,15 @@ export interface MobileWorkspaceContextValue {
   loadAgentHostSettings: (agentId: string, serverId: string) => Promise<AgentHostSettings | null>;
   /** Owners and admins only; the host refuses a member. Resolves with the settings the host saved. */
   updateAgentHostSettings: (input: UpdateAgentHostSettingsInput, serverId: string) => Promise<AgentHostSettings>;
+  /** An owner or admin of an online host that serves `agent-backup-models-v1`. The host checks the role again. */
+  canManageAgentBackupModels: (serverId: string) => boolean;
+  /**
+   * The backup models of an agent, and the model it left for a usage limit. Null when the host does
+   * not advertise `agent-backup-models-v1`. Owners and admins only; the host refuses a member.
+   */
+  loadAgentBackupModels: (agentId: string, serverId: string) => Promise<AgentBackupModelSettings | null>;
+  /** Owners and admins only; the host refuses a member. Resolves with the settings the host saved. */
+  updateAgentBackupModels: (input: UpdateAgentBackupModelsInput, serverId: string) => Promise<AgentBackupModelSettings>;
   /** An owner or admin of an online host that serves `agent-task-limit-v1`. The host checks the role again. */
   canManageAgentTaskLimit: (serverId: string) => boolean;
   /**
@@ -837,6 +848,7 @@ type MobileWorkspaceStateKey =
   | "canManageAgentSkills"
   | "canManageAgentAccess"
   | "canManageAgentHostSettings"
+  | "canManageAgentBackupModels"
   | "canManageAgentTaskLimit"
   | "canManageAgentNewChat"
   | "canManageProviderAccounts"

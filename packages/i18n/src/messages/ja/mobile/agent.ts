@@ -336,6 +336,15 @@ export const messages = {
   "mobile.agent.taskLimit.default": "デフォルト ({count})",
   "mobile.agent.taskLimit.oneTurn":
     "{provider} は一度に1ターンずつ実行します。このエージェントのスレッドは互いに待ち合わせます。",
+  "mobile.agent.browserProfile.label": "ブラウザープロファイル",
+  "mobile.agent.browserProfile.shared": "共有",
+  "mobile.agent.browserProfile.own": "このエージェントのみ",
+  "mobile.agent.browserProfile.missing": "削除されたプロファイル",
+  "mobile.agent.browserProfile.new": "新しいプロファイル",
+  "mobile.agent.browserProfile.manage": "プロファイルを管理",
+  "mobile.agent.browserProfile.footer":
+    "各プロファイルは独自のサインインと Cookie を保持します。変更するとエージェントの開いているタブは閉じます。",
+  "mobile.agent.browserProfile.saveFailed": "OpenBot はエージェントのブラウザープロファイルを変更できませんでした。",
   "mobile.agent.workspace.title": "ワークスペースのフォルダー",
   "mobile.agent.workspace.footer": "ホストのコンピューター上にある、このエージェントのフォルダーです。",
   "mobile.agent.notifications.failed": "通知を変更できませんでした",

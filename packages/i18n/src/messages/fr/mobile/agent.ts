@@ -344,6 +344,15 @@ export const messages = {
   "mobile.agent.taskLimit.default": "Par défaut ({count})",
   "mobile.agent.taskLimit.oneTurn":
     "{provider} exécute un seul tour à la fois. Les fils de cet agent s’attendent les uns les autres.",
+  "mobile.agent.browserProfile.label": "Profil de navigateur",
+  "mobile.agent.browserProfile.shared": "Partagé",
+  "mobile.agent.browserProfile.own": "Cet agent seulement",
+  "mobile.agent.browserProfile.missing": "Profil supprimé",
+  "mobile.agent.browserProfile.new": "Nouveau profil",
+  "mobile.agent.browserProfile.manage": "Gérer les profils",
+  "mobile.agent.browserProfile.footer":
+    "Chaque profil garde ses propres connexions et cookies. Un changement ferme les onglets ouverts de l’agent.",
+  "mobile.agent.browserProfile.saveFailed": "OpenBot n’a pas pu modifier le profil de navigateur de l’agent.",
   "mobile.agent.workspace.title": "Dossier de l’espace de travail",
   "mobile.agent.workspace.footer": "Le dossier de cet agent sur l’ordinateur hôte.",
   "mobile.agent.notifications.failed": "Impossible de modifier les notifications",

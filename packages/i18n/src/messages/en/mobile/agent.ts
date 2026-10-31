@@ -326,6 +326,15 @@ export const messages = defineMessages("mobile.agent", {
   "mobile.agent.taskLimit.default": "Default ({count})",
   "mobile.agent.taskLimit.oneTurn":
     "{provider} runs one turn at a time. The threads of this agent wait for each other.",
+  "mobile.agent.browserProfile.label": "Browser profile",
+  "mobile.agent.browserProfile.shared": "Shared",
+  "mobile.agent.browserProfile.own": "Only this agent",
+  "mobile.agent.browserProfile.missing": "Deleted profile",
+  "mobile.agent.browserProfile.new": "New profile",
+  "mobile.agent.browserProfile.manage": "Manage profiles",
+  "mobile.agent.browserProfile.footer":
+    "Each profile keeps its own sign-ins and cookies. A change closes the agent's open tabs.",
+  "mobile.agent.browserProfile.saveFailed": "OpenBot could not change the browser profile of the agent.",
   "mobile.agent.workspace.title": "Workspace folder",
   "mobile.agent.workspace.footer": "The folder of this agent on the host computer.",
   "mobile.agent.notifications.failed": "Could not change notifications",

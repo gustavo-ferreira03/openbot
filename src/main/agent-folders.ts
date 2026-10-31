@@ -21,6 +21,7 @@ import {
 } from "@openbot/contracts/ipc";
 import type { AgentService } from "../backend/agent-service";
 import { runCauseEffect } from "../backend/effect-boundary";
+import { oneAtATimePerKey } from "./ipc/one-at-a-time";
 
 export interface AgentFoldersDependencies {
   service: Pick<AgentService, "listAgents" | "updateAgent" | "sharedRoot">;
@@ -109,16 +110,7 @@ export function createAgentFolders({ service, userDataPath }: AgentFoldersDepend
 
   // Each change reads the list, checks the disk, then saves the whole list. One change at a time for
   // each agent, so an Undo during a remove does not save over it.
-  const pending = new Map<string, Promise<unknown>>();
-  function oneAtATime<T>(agentId: string, change: () => Promise<T>): Promise<T> {
-    const result = (pending.get(agentId) ?? Promise.resolve()).then(change);
-    const settled = result.catch(() => undefined);
-    pending.set(agentId, settled);
-    void settled.then(() => {
-      if (pending.get(agentId) === settled) pending.delete(agentId);
-    });
-    return result;
-  }
+  const oneAtATime = oneAtATimePerKey();
 
   function requireAgent(agentId: string): AgentSummary {
     const agent = service.listAgents().find((candidate) => candidate.id === agentId);

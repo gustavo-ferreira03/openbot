@@ -639,6 +639,47 @@ transaction. Creation follows the existing workspace/initial-message flow with
 cleanup on failure. Receipts make retries after a lost response return the saved
 agent. This does not introduce a schema migration or alter released protocol codecs.
 
+## Agent instruction file
+
+An agent keeps its standing rules (persona, style, steps) in one file at the root of its workspace:
+`AGENTS.md`, or `CLAUDE.md` when only that file exists. The profile description is a short summary
+for teammates and the Team API; it keeps its meaning and its 2,000-character limit.
+
+- `src/backend/agent/workspace-instructions.ts` finds, reads and saves the file. A link that goes
+  outside the workspace is refused. A save writes the first file that exists, else it creates
+  `AGENTS.md` with mode 0600. An existing file keeps its mode; a hard link to it is replaced by a
+  new file. A save never deletes the file.
+- The editor sends the text that the edit started from. When the agent changed the file after
+  that, main refuses the save. The editor keeps the user's text, says that the agent changed the
+  file, and a second Save replaces the agent's version.
+- The agent settings show the file as "Instructions" for a local agent only
+  (`agentInstructions` IPC group). The row in the Knows group opens a page
+  (`AgentInstructionsView`): a bar with the file name, its folder, Show in Finder and Edit, then
+  the file as Markdown. Edit puts the whole file in a field on the page that saves only on Save.
+  Show in Finder sends only the agent id; main finds the file, or the workspace when it has none.
+  The Team API does not carry the file.
+- `InstructionsChanges` (`src/backend/agent/instructions-changes.ts`) reads the file when the first
+  turn of an agent starts and again when a turn ends. When the text changed, the turn ends with an
+  `instructions-change` system line, "Updated its instructions". The baseline is one per agent, so
+  two turns at the same time show the change once. A save in the editor moves the baseline, so
+  the user's own edit does not show as the agent's. A turn that a restart settles shows no line.
+- The line carries `instructionsChange` (`before`, `after`) when both texts fit the editor limit.
+  The message stays in `projection_thread_messages.message_json`, so no migration is needed. The
+  Team API projections do not copy the field: a remote client sees the text only. View opens the
+  Instructions page, and does not show in a channel; Undo saves `before` with `after` as the expected text, so main refuses it after a later
+  change. A save on the page or an Undo updates the page and each line of the same agent. The
+  unread counts skip the line.
+- The developer instructions name the file and tell the agent to keep its rules there.
+  `workspaceInstructionFiles` in the provider descriptor lists the files that each CLI reads by
+  itself from its working directory. `ThreadLifecycle` adds the text of the file, at most 32,000
+  characters, only when the CLI does not read that file. Claude in workspace-only mode reads user
+  settings only, so it gets the text.
+- The text is redacted, and a `</agent_instructions>` tag in it is escaped.
+- Codex keeps the instructions of a loaded session: the developer instructions, and the
+  `AGENTS.md` that it read when the session started. The Codex tool fingerprint therefore includes
+  the file name when it is not `AGENTS.md`, and the file text. A change to the file starts a new
+  Codex session. Other providers read the file again when they start or resume a session.
+
 ## Agent import
 
 Server Settings > Import moves agents from a `.zip` export into the local host, or into a remote host

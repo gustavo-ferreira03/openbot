@@ -69,6 +69,7 @@ import type {
   AgentImportSkillSource,
   ApplyAgentImportInput,
 } from "./ipc-agent-import";
+import type { AgentInstructionsFile, SaveAgentInstructionsInput } from "./ipc-agent-instructions";
 import type {
   AgentMemory,
   AgentMemoryLimitPreference,
@@ -1570,6 +1571,14 @@ export const IPC_ENDPOINTS = {
     addAgentExclusion: request<AgentFolderInput, AgentExclusionChange>()("agent:folders:exclusions:add"),
     removeAgentExclusion: request<AgentFolderInput, AgentExclusionChange>()("agent:folders:exclusions:remove"),
   },
+  // The instruction file at the root of a local agent's workspace. A joined server has no route for
+  // it: the Team API does not carry it.
+  agentInstructions: {
+    readAgentInstructions: request<string, AgentInstructionsFile>()("agent:instructions:read"),
+    saveAgentInstructions: request<SaveAgentInstructionsInput, AgentInstructionsFile>()("agent:instructions:save"),
+    // Main finds the file from the agent id: the page never names a path to show.
+    revealAgentInstructions: request<string, void>()("agent:instructions:reveal"),
+  },
   // Not part of `agentAttachments`: the preload sends the paths of dropped and pasted files, and the
   // renderer must never name a path to import. So this group is never bridged to the renderer.
   attachmentImports: {
@@ -1903,6 +1912,7 @@ export const IPC_GROUP_PATHS = {
   channelRoutines: "agent",
   agentAttachments: "agent",
   agentFolders: "agent",
+  agentInstructions: "agent",
   // The preload calls it from its own drop, paste, and file input handlers.
   attachmentImports: null,
   browser: "browser",

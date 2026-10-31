@@ -811,8 +811,13 @@ export const BUILT_IN_PROVIDER_DRIVERS: readonly BuiltInProviderDriver[] = [
         }),
         signInMessage: openCodeSignInMessage(openCodeEndpoints(context)().length),
         modelName: (id, name) => openCodeModelName(id, name, openCodeEndpoints(context)),
-        // A stalled turn on a custom endpoint names the endpoint, not OpenCode (#3234).
-        providerName: (modelId) => customProviderOfModel(modelId, openCodeEndpoints(context)())?.name ?? null,
+        // A stalled or refused turn on a custom endpoint names the endpoint, not OpenCode (#3234).
+        customEndpoint: (modelId) => {
+          const endpoint = customProviderOfModel(modelId, openCodeEndpoints(context)());
+          return endpoint
+            ? { name: endpoint.name, hasCredentials: Boolean(endpoint.apiKey) || endpoint.headers.length > 0 }
+            : null;
+        },
         servesModel: context.servesModel,
         mcpServers: context.mcpServers,
         reportMcpDrops: context.reportMcpDrops,

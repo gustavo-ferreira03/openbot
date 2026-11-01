@@ -113,6 +113,7 @@ import {
   MOBILE_ATTACHMENT_BYTES,
   type RemoteFileUpload,
   type RemoteTeamConnectionUpdate,
+  type RemoteTeamPeerActions,
 } from "@openbot/team-client/remote-peer";
 import { remoteWorkspaceReadTimeout } from "@openbot/team-client/remote-recovery";
 import {
@@ -178,6 +179,16 @@ export interface WebFile {
   base64: string;
 }
 
+interface WebEarlyReads {
+  start(): void;
+  drop(): void;
+}
+
+interface WebConnectOptions {
+  takeOver?: boolean;
+  early?: WebEarlyReads;
+}
+
 export interface WebWorkspaceRuntime {
   admin?: WebAdminRuntime;
   /** The status connections of the hosts that this tab has not opened. */
@@ -208,8 +219,13 @@ export interface WebWorkspaceRuntime {
   removeOwnedHost?: (hostId: string) => Promise<void>;
   previewInvite(url: string): Promise<InvitePreview>;
   acceptInvite(url: string): Promise<RemoteTeamHost>;
-  /** With `takeOver`, a tab that has the host open closes it, and `hostTaken` tells that tab. */
-  connect(host: RemoteTeamHost, options?: { takeOver?: boolean }): Promise<string[]>;
+  /**
+   * Connects and reads the host's compatibility. When the host protocol of an earlier connection is
+   * known, `early.start` runs as the data channels open, so the first reads go beside that read.
+   * `early.drop` runs when the read gives another protocol: those reads used the wrong capabilities.
+   * With `takeOver`, a tab that has the host open closes it, and `hostTaken` tells that tab.
+   */
+  connect(host: RemoteTeamHost, options?: WebConnectOptions): Promise<string[]>;
   disconnect(): Promise<void>;
   listAgents(): Promise<ClientAgentSummary[]>;
   conversation(agentId: string, before?: string): Promise<ConversationPage>;
@@ -353,6 +369,15 @@ interface WebConnectionDependencies {
   openHostChannel?: (accountId: string) => BroadcastChannel | null;
 }
 
+function hostProtocolKey(accountId: string, hostId: string): string {
+  return `openbot.web.host-protocol:${accountId}:${hostId}`;
+}
+
+function savedHostProtocol(accountId: string, hostId: string): number | undefined {
+  const protocol = Number(localStorage.getItem(hostProtocolKey(accountId, hostId)));
+  return Number.isSafeInteger(protocol) && protocol > 0 ? protocol : undefined;
+}
+
 /** Pin after directory validation and before connecting. Never silently replace a saved identity. */
 function pinWebHostKey(accountId: string, host: RemoteTeamHost): void {
   const key = `openbot.web.host-key:${accountId}:${host.hostId}`;
@@ -407,30 +432,55 @@ export function createWebWorkspaceRuntime(
   };
   /** The host of a connect attempt that Signal holds until the host is online. */
   let waitingHostId: string | null = null;
-  const peer = dependencies.createPeer(
-    {
-      current: {
-        ...sessionActions,
-        onConnectionUpdate: async (update) => {
-          // A `connecting` update without `hostOffline`, such as a `rate_limited` reply, does not end the hold.
-          if (update.hostOffline) waitingHostId = update.hostId;
-          else if (update.state !== "connecting") waitingHostId = null;
-          if (update.state !== "online") {
-            browserView.disconnect(update.message ?? undefined);
-            const releaseGeneration = liveViewGeneration + 1;
-            void releaseLiveView().finally(() => {
-              if (liveViewGeneration === releaseGeneration) browserView.disconnect();
-            });
-          }
-          events.connection(update);
-        },
-        onHostStreamData: (data) => browserView.receive(data),
-        onTeamEvent: async (id, event) => events.event(id, event),
-        onAccountProfileChanged: events.accountChanged,
-      },
+  const openedActions: RemoteTeamPeerActions = {
+    ...sessionActions,
+    onConnectionUpdate: async (update) => {
+      // A `connecting` update without `hostOffline`, such as a `rate_limited` reply, does not end the hold.
+      if (update.hostOffline) waitingHostId = update.hostId;
+      else if (update.state !== "connecting") waitingHostId = null;
+      if (update.state !== "online") {
+        browserView.disconnect(update.message ?? undefined);
+        const releaseGeneration = liveViewGeneration + 1;
+        void releaseLiveView().finally(() => {
+          if (liveViewGeneration === releaseGeneration) browserView.disconnect();
+        });
+      }
+      events.connection(update);
     },
-    { waitForHost: true },
-  );
+    onHostStreamData: (data) => browserView.receive(data),
+    onTeamEvent: async (id, event) => events.event(id, event),
+    onAccountProfileChanged: events.accountChanged,
+  };
+  // A new page sends its first reads with the protocol of the last visit, beside the compatibility
+  // read. `connectHost` reads them again when the protocol changed.
+  const hostProtocols = {
+    get: (id: string) => savedHostProtocol(accountId, id),
+    set: (id: string, protocol: number) => localStorage.setItem(hostProtocolKey(accountId, id), String(protocol)),
+  };
+  function createOpenedPeer() {
+    const actions = { current: openedActions };
+    return { peer: dependencies.createPeer(actions, { waitForHost: true, hostProtocols }), actions };
+  }
+  // Each host switch replaces the peer, so the old host's session can end while the new host connects.
+  let { peer, actions: peerActions } = createOpenedPeer();
+  /** Peers of earlier hosts that are still ending their sessions. */
+  const retiring = new Set<Promise<void>>();
+  /** Ends the peer's sessions in the background, then releases its host's lock. */
+  function retire(previous: typeof peer, actions: typeof peerActions, releaseLock: (() => void) | null): void {
+    // The account service gives a new connection to the host the same session while it is active,
+    // so the lock waits for the end. The old peer reports nothing more to the workspace.
+    actions.current = {
+      ...sessionActions,
+      onConnectionUpdate: async () => undefined,
+      onTeamEvent: async () => undefined,
+    };
+    const ending = previous
+      .dispose()
+      .catch(() => undefined)
+      .finally(() => releaseLock?.());
+    retiring.add(ending);
+    void ending.finally(() => retiring.delete(ending));
+  }
   let releaseHostLock: (() => void) | null = null;
   let lockedHostId: string | null = null;
   const hostChannel = dependencies.openHostChannel?.(accountId) ?? null;
@@ -440,6 +490,7 @@ export function createWebWorkspaceRuntime(
         channel: hostChannel,
         actions: sessionActions,
         createPeer: dependencies.createPeer,
+        peerOptions: { hostProtocols },
         acquireHostLock: dependencies.acquireHostLock,
         pinHostKey: (host) => pinWebHostKey(accountId, host),
         onState: (hostId, state) => events.hostState?.(hostId, state),
@@ -696,7 +747,7 @@ export function createWebWorkspaceRuntime(
     // An attempt for another host already let this host go.
     if (lockedHostId === hostId) await closeOpenedHost();
   }
-  async function connectHost(host: RemoteTeamHost, takeOver: boolean): Promise<string[]> {
+  async function connectHost(host: RemoteTeamHost, { takeOver = false, early }: WebConnectOptions): Promise<string[]> {
     try {
       await peer.cancelUpload().catch(() => undefined);
       const switchingHost = lockedHostId !== host.hostId;
@@ -705,20 +756,29 @@ export function createWebWorkspaceRuntime(
       await releaseLiveView();
       browserView.disconnect();
       if (switchingHost) {
-        await peer.execute({ id: crypto.randomUUID(), type: "disconnect" });
-        releaseHostLock?.();
+        const previous = { peer, actions: peerActions, releaseLock: releaseHostLock };
         releaseHostLock = null;
         lockedHostId = null;
-        // This tab's own status connection gives the host up first.
+        // This tab's online status connection of the host becomes the opened host, with its session,
+        // path and lock. Otherwise the status connection gives the host up first.
+        const handover = hosts?.handOver(host.hostId) ?? null;
+        if (handover) {
+          handover.actions.current = openedActions;
+          handover.peer.setWaitForHost(true);
+          ({ peer, actions: peerActions } = handover);
+        } else ({ peer, actions: peerActions } = createOpenedPeer());
+        retire(previous.peer, previous.actions, previous.releaseLock);
         await hosts?.select(host.hostId);
-        const release = await acquireOpenedWebHostLock(
-          accountId,
-          host.hostId,
-          hostChannel,
-          dependencies.acquireHostLock,
-          undefined,
-          takeOver,
-        );
+        const release =
+          handover?.releaseLock ??
+          (await acquireOpenedWebHostLock(
+            accountId,
+            host.hostId,
+            hostChannel,
+            dependencies.acquireHostLock,
+            undefined,
+            takeOver,
+          ));
         if (disposed) {
           release();
           throw new Error(currentText().t("webClient.error.connectionClosed"));
@@ -741,7 +801,10 @@ export function createWebWorkspaceRuntime(
           currentText().t("webClient.error.connectionUnavailable"),
           result.ok ? null : (result.reference ?? null),
         );
+      const knownProtocol = savedHostProtocol(accountId, host.hostId);
+      if (knownProtocol !== undefined) early?.start();
       const support = decodeTeamProtocolSupportV9(await request("GET", TEAM_API_ROUTES.compatibility));
+      if (knownProtocol !== undefined && support.protocol.maximum !== knownProtocol) early?.drop();
       const updateDirection = teamProtocolUpdateDirection(
         { minimum: TEAM_PROTOCOL_V3, maximum: TEAM_PROTOCOL_V3 },
         support.protocol,
@@ -934,7 +997,7 @@ export function createWebWorkspaceRuntime(
         await previous.catch(() => undefined);
       }
       if (connecting || disposed) throw new Error(currentText().t("webClient.error.connectionChanging"));
-      const attempt = connectHost(host, options?.takeOver === true);
+      const attempt = connectHost(host, options ?? {});
       connecting = attempt;
       connectingHostId = host.hostId;
       try {
@@ -1250,7 +1313,7 @@ export function createWebWorkspaceRuntime(
       connectedHost = null;
       duplicateOperationIds.clear();
       try {
-        await Promise.all([peer.dispose(), hosts?.dispose()]);
+        await Promise.all([peer.dispose(), hosts?.dispose(), ...retiring]);
       } finally {
         releaseHostLock?.();
         releaseHostLock = null;
